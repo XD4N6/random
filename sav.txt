@@ -329,4 +329,3 @@ game:BindToClose(function()
 		x =  #game.Players:GetPlayers()
 	end
 end)
-
