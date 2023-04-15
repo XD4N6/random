@@ -1,0 +1,332 @@
+local function SendLog(plr, text, data)
+	if data then
+	local info = {
+		["embeds"] = {{
+			["author"] = {
+				["name"] = plr.Name.."("..plr.UserId..")",
+			},
+			["color"] = 5763719	,
+			["fields"] = {
+				{
+					["name"] = "Data Log",
+					["value"] = text,
+					["inline"] = true
+					
+				},
+				
+				{
+					["name"] = "Date: "..os.date("%x"),
+					["value"] = "```"..http_service:JSONEncode(data).."```",
+					["inline"] = true
+						
+				}
+			}
+			
+		}}
+	}
+	
+	local f = http_service:JSONEncode(info)
+		http_service:PostAsync(webhookurl, f)
+	else
+		local info = {
+			["embeds"] = {{
+				["author"] = {
+					["name"] = plr.Name.."("..plr.UserId..")",
+					["icon_url"] = "https://www.google.com/imgres?imgurl=http%3A%2F%2Fcdn.onlinewebfonts.com%2Fsvg%2Fimg_303207.png&tbnid=ezQFatYMbWbENM&vet=12ahUKEwiH57TTlaf-AhUO4WEKHRSyBgAQMygOegUIARCJAg..i&imgrefurl=https%3A%2F%2Fwww.onlinewebfonts.com%2Ficon%2F303207&docid=Omwcn_t0d2yr6M&w=980&h=980&q=icon%20url&ved=2ahUKEwiH57TTlaf-AhUO4WEKHRSyBgAQMygOegUIARCJAg"
+				},
+				["color"] = 5763719	,
+				["fields"] = {
+					{
+						["name"] = "Data Log",
+						["value"] = text,
+						["inline"] = true
+
+					},
+
+				}
+
+			}}
+		}
+
+		local f = http_service:JSONEncode(info)
+		http_service:PostAsync(webhookurl, f)
+	end	
+	
+end
+
+
+
+
+
+
+
+
+
+
+local TableOfStats = {
+	["Owner"] = {
+		ID = 0
+	},
+	["NumVal"] = {
+		OreLuck = 1,
+		SpawnCD = 15,
+		
+		RollSpeed = 5,
+		BulkRoll = 1,
+		
+				
+		Cash = 0,
+		Level = 0,
+		Exp = 0,
+		Wood = 0,
+		Stone = 0,
+		Coal = 0,
+		Gold = 0,
+		Iron = 0,
+		Redstone = 0,
+		Lapiz = 0,
+		Diamond = 0 ,
+		Emerald = 0,
+		Ruby = 0,
+		Sapphire = 0,
+		
+
+	},
+	["BoolVal"] = {
+		Ban = false,
+		
+		SMOFF = false,
+		Admin = false,
+		
+		Wood_P = true,
+		Stone_P = false,
+		Gold_P = false,
+		Iron_P = false,
+		Diamond_P = false,
+		Emerald_P = false,
+		Ruby_P = false,
+		Sapphire_P = false,
+		
+		Wood_A = true,
+		Stone_A = false,
+		Gold_A = false,
+		Iron_A = false,
+		Diamond_A = false,
+		Emerald_A = false,
+		Ruby_A = false,
+		Sapphire_A = false,
+	},
+	["StringVal"] = {
+		Selected = "Wood_P",
+		Selected2 = "Wood_A"
+	}
+}
+
+-- Locals
+local name = "Stats"
+local data = nil
+local Maxed_Tries = 10
+local Current_Tries = 0
+local Getting_Data_Interval = 3
+
+-- functions 
+
+local function SaveData(prefix, de)
+	de.Owner.ID = prefix
+	local succ, err = pcall(function()
+		Datastore:UpdateAsync(prefix, function(Before)
+			return de
+		end)
+	end)
+	if succ then
+		return true
+	else
+		return false
+	end
+end
+
+local function LoadData(player, Parent, NoLoad)
+	for ni, nv in pairs(TableOfStats.NumVal) do
+		local v = Instance.new("NumberValue", Parent)
+		v.Name = ni
+		v.Value = nv
+		local value 
+		pcall(function()
+			if data.NumVal and not NoLoad then
+				value = data.NumVal[ni]
+			end
+		end)
+		if value ~= nil then
+			v.Value = value
+			print("["..player.Name.."] "..ni..": "..value)
+		else
+			print("["..player.Name.."] "..ni..": "..nv)	
+		end
+	end
+
+	for bi, bv in pairs(TableOfStats.BoolVal) do
+		local v = Instance.new("BoolValue", Parent)
+		v.Name = bi
+		v.Value = bv
+		local value
+		pcall(function()
+			if data.BoolVal and not NoLoad then
+				value = data.BoolVal[bi]
+			end
+		end)
+		if value ~= nil then
+			v.Value = value
+			print("["..player.Name.."] "..bi..": "..tostring(value))
+		else
+			print("["..player.Name.."] "..bi..": "..tostring(bv))			
+		end
+	end
+	
+	for si, sv in pairs(TableOfStats.StringVal) do
+		local v = Instance.new("StringValue", Parent)
+		v.Name = si
+		v.Value = sv
+		local value
+		pcall(function()
+			if data.StringVal and not NoLoad then
+				value = data.StringVal[si]
+			end
+		end)
+		if value ~= nil then
+			v.Value = value
+			print("["..player.Name.."] "..si..": "..tostring(value))
+		else
+			print("["..player.Name.."] "..si..": "..tostring(sv))			
+		end
+	end
+end
+
+local function GetData(prefix)
+	repeat
+		Current_Tries += 1
+		data = Datastore:GetAsync(prefix)
+		task.wait(Getting_Data_Interval)
+	until data or Current_Tries >= Maxed_Tries
+	if data then
+		prefix = nil
+		return true
+	else
+		prefix = nil
+		return false
+	end
+end
+
+
+-- Functions 2.0
+
+game.Players.PlayerAdded:Connect(function(p)
+	Current_Tries = 0
+	data = nil
+	local s, e = pcall(function()
+	local Folder = Instance.new("Folder")
+	Folder.Name = name
+	Folder.Parent = p
+	local f = Instance.new("Folder",p)
+	f.Name = "leaderstats"
+	local gg = Instance.new("StringValue",f)
+	gg.Name = "Cash"
+	local ggm = Instance.new("StringValue", f)
+	ggm.Name = "Level"
+	local Last = Instance.new("BoolValue", Folder)
+	Last.Name = "LoadedStats"
+	Last.Value = false
+	
+	if GetData(p.UserId) == true then
+		if data.Owner then
+			if tonumber(data.Owner.ID) == p.UserId then
+				LoadData(p, Folder, false)
+				warn("Successfully Loaded Stats".."("..p.Name..")")
+					SendLog(p, "Loaded Stats", data)
+					Last.Value = true
+			else
+					p:Kick("Rejoin..")
+					SendLog(p, tostring(p.UserId)..tostring(data.Owner.ID))
+				
+			end
+			else
+			LoadData(p, Folder, false)
+			warn("Successfully Loaded Stats".."("..p.Name..")".."OUTDATED")
+			SendLog(p, "Loaded Stats Outdated", data)
+			Last.Value = true
+			
+		end	
+	else
+		LoadData(p, Folder, true)
+		warn("Loaded But No Data Found("..p.Name..")")
+		SendLog(p, "Loaded Stats But NO Data Found")
+		Last.Value = true
+		
+	end
+		if Folder:FindFirstChild("Done") then
+			data = nil
+		end
+	if p.Stats.Ban.Value == true then SendLog(p, "Banned Cant play L") p:Kick("ur banned lamo5") end
+	end)
+end)
+
+game.Players.PlayerRemoving:Connect(function(p)
+	local surps, nop = pcall(function()
+	local Saver = TableOfStats
+	local Folder = p:FindFirstChild("Stats")
+	if Folder then
+		for Name,Tablets  in pairs(Saver) do
+			for rame, val in pairs(Tablets) do
+				if Folder:FindFirstChild(rame) then
+					Saver[Name][rame] = Folder[rame].Value
+				end
+			end
+		end
+	end
+	
+	if p.Stats:FindFirstChild("Done") then
+	if p.Stats.Done.Value == true then
+			if SaveData(p.UserId, Saver) == true then
+				SendLog(p, "Saved Data", Saver)
+		warn("Successfully Saved Stats".."("..p.Name..")", Saver.StringVal, Saver.NumVal, Saver.BoolVal)
+			end
+		end	
+	else
+		SendLog(p, "Left before finish loading.. Data is safe")
+		end	
+	end)	
+end)
+
+game:BindToClose(function()
+	for i, p in pairs(game.Players:GetPlayers()) do
+		local Saver = TableOfStats
+		local Folder = p:FindFirstChild("Stats")
+		if Folder then
+			for Name,Tablets  in pairs(Saver) do
+				for rame, val in pairs(Tablets) do
+					if Folder:FindFirstChild(rame) then
+						Saver[Name][rame] = Folder[rame].Value
+					end
+				end
+			end
+		end
+		if p.Stats:FindFirstChild("Done") then
+			if p.Stats.Done.Value == true then
+				if SaveData(p.UserId, Saver) == true then
+					SendLog(p, "Saved Data(BindToClose)", Saver)
+					warn("Successfully Saved Stats".."("..p.Name..")", Saver.StringVal, Saver.NumVal, Saver.BoolVal)
+				end
+			end
+		else
+			SendLog(p, "Left before finish loading.. Data is safe(BindToClose)")	
+		end	
+		task.wait(1)
+	end	
+
+
+	local x = #game.Players:GetPlayers()
+	while x > 0 do
+		task.wait(1)
+		x =  #game.Players:GetPlayers()
+	end
+end)
+
