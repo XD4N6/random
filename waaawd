@@ -1,0 +1,131 @@
+local RSA = {}
+
+-- Helper function to generate a random prime number
+local function generate_prime_number(min, max)
+	local num = math.random(min, max)
+	while true do
+		if num % 2 == 0 then
+			num = num + 1
+		end
+		local is_prime = true
+		for i = 3, math.sqrt(num), 2 do
+			if num % i == 0 then
+				is_prime = false
+				break
+			end
+		end
+		if is_prime then
+			return num
+		else
+			num = num + 2
+		end
+	end
+end
+
+-- Helper function to calculate the greatest common divisor
+local function gcd(a, b)
+	if b == 0 then
+		return a
+	else
+		return gcd(b, a % b)
+	end
+end
+
+-- Helper function to calculate the modular multiplicative inverse
+local function modinv(a, m)
+	local m0 = m
+	local y = 0
+	local x = 1
+
+	if m == 1 then
+		return 0
+	end
+
+	while a > 1 do
+		local q = math.floor(a / m)
+		local t = m
+		m = a % m
+		a = t
+		t = y
+		y = x - q * y
+		x = t
+	end
+
+	if x < 0 then
+		x = x + m0
+	end
+
+	return x
+end
+
+-- Helper function to calculate the modular exponentiation
+local function modexp(base, exp, mod)
+	if exp == 0 then
+		return 1
+	elseif exp % 2 == 0 then
+		local half = modexp(base, exp / 2, mod)
+		return (half * half) % mod
+	else
+		return (base * modexp(base, exp - 1, mod)) % mod
+	end
+end
+
+-- Generate a public-private key pair
+-- Generate a public-private key pair
+function RSA.generate_key_pair()
+	-- Choose two distinct prime numbers
+	math.randomseed(os.time())
+	local p = generate_prime_number(1000, 2000)
+	local q = generate_prime_number(2000, 3000)
+
+	-- Calculate n and phi(n)
+	local n = p * q
+	local phi_n = (p - 1) * (q - 1)
+
+	-- Choose a public exponent e
+	local e = 65537 -- This is a common choice for e
+
+	-- Calculate the private exponent d
+	local d = modinv(e, phi_n)
+
+	local public_key = { n = n, e = e }
+	local private_key = { n = n, d = d }
+
+	return { public_key = public_key, private_key = private_key }
+end
+
+-- Encrypt a message using a public key
+function RSA.encrypt(message, public_key)
+	local n = public_key.n
+	local e = public_key.e
+
+	local encrypted = {}
+
+	for i = 1, #message do
+		local c = string.byte(message:sub(i, i))
+		local ciphertext = modexp(c, e, n)
+		table.insert(encrypted, ciphertext)
+	end
+
+	return encrypted
+end
+
+-- Decrypt a message using a private key
+function RSA.decrypt(encrypted, private_key)
+	local n = private_key.n
+	local d = private_key.d
+	local decrypted = {}
+
+	for i = 1, #encrypted do
+		local ciphertext = encrypted[i]
+		local c = modexp(ciphertext, d, n)
+		local plaintext = string.char(c)
+
+		table.insert(decrypted, plaintext)
+	end
+
+	return table.concat(decrypted)
+end
+
+-- Export RSA module
+return RSA
